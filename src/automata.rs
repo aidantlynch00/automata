@@ -34,11 +34,12 @@ impl<C: Cell> Automata<C> {
 
     pub fn next_gen(&mut self) {
         let diff = [-1, 0, 1];
+        let mut neighbors: [Option<&C>; 8] = [None; 8];
 
         for col in 0..self.cols as isize {
             for row in 0..self.rows as isize {
                 // push references to this cell's neighbors
-                let mut neighbors = Vec::with_capacity(8);
+                let mut ref_index: usize = 0;
                 let diffs = iproduct!(diff.iter().cloned(), diff.iter().cloned());
                 for (dc, dr) in diffs {
                     // skip the current cell
@@ -56,11 +57,17 @@ impl<C: Cell> Automata<C> {
 
                     // push reference to neighbor
                     let nindex = self.grid_to_linear(ncol as usize, nrow as usize);
-                    neighbors.push(&self.current[nindex]);
+                    neighbors[ref_index] = Some(&self.current[nindex]);
+                    ref_index += 1;
                 }
 
+                // take all references in the neighbors array
+                let neighbors_iter = neighbors.iter_mut()
+                    .flat_map(|neighbor_opt| neighbor_opt.take());
+
+                // calculate the next cell
                 let index = self.grid_to_linear(col as usize, row as usize);
-                self.next[index] = Some(self.current[index].next(neighbors));
+                self.next[index] = Some(self.current[index].next(neighbors_iter));
             }
         }
 
