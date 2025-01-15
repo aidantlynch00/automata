@@ -3,18 +3,18 @@ use macroquad::rand::gen_range;
 use crate::cell::Cell;
 
 pub enum Life {
-    Alive,
     Dead,
+    Alive,
 }
 
-pub struct RandomLifeParams {
+pub struct LifeParams {
     pub alive_ratio: f32,
 }
 
 impl Cell for Life {
-    type RandomParams = RandomLifeParams;
+    type Params = LifeParams;
 
-    fn random(params: &Self::RandomParams) -> Self {
+    fn new(params: &Self::Params) -> Self {
         if gen_range(0.0, 1.0) < params.alive_ratio {
             Life::Alive
         }
@@ -23,14 +23,31 @@ impl Cell for Life {
         }
     }
 
-    fn next<'a>(&'a self, neighbors: impl Iterator<Item = &'a Self>) -> Self {
-        Life::Alive
+    fn next<'a>(&'a self, neighbors: impl IntoIterator<Item = &'a Self>) -> Self
+    {
+        let alive_neighbors = neighbors.into_iter()
+            .map(|neighbor| match *neighbor {
+                Life::Dead => 0,
+                Life::Alive => 1,
+            })
+            .sum::<usize>();
+
+        match *self {
+            Life::Dead => match alive_neighbors {
+                3 => Life::Alive,
+                _ => Life::Dead,
+            },
+            Life::Alive => match alive_neighbors {
+                2 | 3 => Life::Alive,
+                _ => Life::Dead,
+            },
+        }
     }
 
     fn color(&self) -> Color {
         match *self {
-            Life::Alive => BLACK,
             Life::Dead => WHITE,
+            Life::Alive => BLACK,
         }
     }
 }
