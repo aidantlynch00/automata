@@ -1,6 +1,16 @@
+mod automata;
+mod cell;
+
 use std::process::exit;
+use std::sync::LazyLock;
 use macroquad::prelude::*;
 use miniquad::conf::Platform;
+use automata::Automata;
+use cell::life::{Life, RandomLifeParams};
+
+static SCREEN_DIMS: LazyLock<(f32, f32)> = LazyLock::new(|| {
+    (screen_width(), screen_height())
+});
 
 fn window_conf() -> Conf {
     Conf {
@@ -17,35 +27,30 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    const CELL_SIZE: u16 = 50;
+    const CELL_SIZE: usize = 5;
     for _ in 0..3 { next_frame().await }
 
-    // get screen dimensions
-    let sw = screen_width();
-    let sh = screen_height();
-
-    // determine the grid size based on screen and cell size
-    let grid_w = sw as u16 / CELL_SIZE;
-    let grid_h = sh as u16 / CELL_SIZE;
-
-    let mut image = Image::gen_image_color(grid_w, grid_h, WHITE);
-    let texture = Texture2D::from_image(&image);
-    let texture_params = DrawTextureParams {
-        dest_size: Some(Vec2::new(sw, sh)),
-        ..DrawTextureParams::default()
-    };
+    // set up automata
+    let mut automata: Automata<Life> = Automata::new(
+        CELL_SIZE,
+        RandomLifeParams {
+            alive_ratio: 0.5,
+        }
+    );
 
     loop {
         // handle key presses
         if is_key_down(KeyCode::Q) {
             exit(0);
         }
+        
+        clear_background(BLACK);
 
-        clear_background(WHITE);
+        // render automata on screen
+        automata.render();
 
-        // update texture with image data and render
-        texture.update(&image);
-        draw_texture_ex(&texture, 0.0, 0.0, WHITE, texture_params.clone());
+        // calculate next generation of automata
+        automata.next_gen();
 
         next_frame().await;
     }
