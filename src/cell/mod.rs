@@ -1,4 +1,5 @@
 pub mod life;
+pub mod cyclic;
 
 use macroquad::color::Color;
 
