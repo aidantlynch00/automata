@@ -23,7 +23,7 @@ impl Cell for Life {
         }
     }
 
-    fn next<'a>(&'a self, neighbors: impl IntoIterator<Item = &'a Self>) -> Self
+    fn next<'a>(&'a self, _params: &Self::Params, neighbors: impl IntoIterator<Item = &'a Self>) -> Self
     {
         let alive_neighbors = neighbors.into_iter()
             .map(|neighbor| match *neighbor {
@@ -44,7 +44,7 @@ impl Cell for Life {
         }
     }
 
-    fn color(&self) -> Color {
+    fn color(&self, _params: &Self::Params) -> Color {
         match *self {
             Life::Dead => WHITE,
             Life::Alive => BLACK,

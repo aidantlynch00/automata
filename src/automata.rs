@@ -3,10 +3,16 @@ use itertools::iproduct;
 use crate::SCREEN_DIMS;
 use crate::cell::Cell;
 
+pub trait AutomataTrait {
+    fn next(&mut self);
+    fn render(&self);
+}
+
 pub struct Automata<C: Cell> {
     cell_size: f32,
     cols: usize,
     rows: usize,
+    params: C::Params,
     current: Box<[C]>,
     next: Box<[Option<C>]>,
 }
@@ -27,12 +33,26 @@ impl<C: Cell> Automata<C> {
             cell_size,
             cols,
             rows,
+            params,
             current: current.into_boxed_slice(),
             next: next.into_boxed_slice(),
         }
     }
 
-    pub fn next_gen(&mut self) {
+
+    fn linear_to_grid(&self, index: usize) -> (usize, usize) {
+        let col = index / self.rows;
+        let row = index % self.rows;
+        (col, row)
+    }
+
+    fn grid_to_linear(&self, col: usize, row: usize) -> usize {
+        col * self.rows + row
+    }
+}
+
+impl<C: Cell> AutomataTrait for Automata<C> {
+    fn next(&mut self) {
         let diff = [-1, 0, 1];
         let mut neighbors: [Option<&C>; 8] = [None; 8];
 
@@ -67,7 +87,7 @@ impl<C: Cell> Automata<C> {
 
                 // calculate the next cell
                 let index = self.grid_to_linear(col as usize, row as usize);
-                self.next[index] = Some(self.current[index].next(neighbors_iter));
+                self.next[index] = Some(self.current[index].next(&self.params, neighbors_iter));
             }
         }
 
@@ -77,10 +97,10 @@ impl<C: Cell> Automata<C> {
         }
     }
 
-    pub fn render(&self) {
+    fn render(&self) {
         for (index, cell) in self.current.iter().enumerate() {
             let (x, y) = self.linear_to_grid(index);
-            let color = cell.color();
+            let color = cell.color(&self.params);
 
             draw_rectangle(
                 x as f32 * self.cell_size,
@@ -90,15 +110,5 @@ impl<C: Cell> Automata<C> {
                 color
             );
         }
-    }
-
-    fn linear_to_grid(&self, index: usize) -> (usize, usize) {
-        let col = index / self.rows;
-        let row = index % self.rows;
-        (col, row)
-    }
-
-    fn grid_to_linear(&self, col: usize, row: usize) -> usize {
-        col * self.rows + row
     }
 }
