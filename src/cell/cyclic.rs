@@ -55,3 +55,11 @@ impl Cell for Cyclic {
         params.palette[self.value]
     }
 }
+
+impl Default for Cyclic {
+    fn default() -> Self {
+        Cyclic {
+            value: 0,
+        }
+    }
+}

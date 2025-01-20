@@ -51,3 +51,9 @@ impl Cell for Life {
         }
     }
 }
+
+impl Default for Life {
+    fn default() -> Self {
+        Life::Dead
+    }
+}

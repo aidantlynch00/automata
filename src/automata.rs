@@ -14,7 +14,7 @@ pub struct Automata<C: Cell> {
     rows: usize,
     params: C::Params,
     current: Box<[C]>,
-    next: Box<[Option<C>]>,
+    next: Box<[C]>,
 }
 
 impl<C: Cell> Automata<C> {
@@ -25,8 +25,8 @@ impl<C: Cell> Automata<C> {
         let rows = (sh / cell_size) as usize;
 
         let total = cols * rows;
-        let (current, next): (Vec<C>, Vec<Option<C>>) = (0..total)
-            .map(|_| (C::new(&params), None))
+        let (current, next): (Vec<C>, Vec<C>) = (0..total)
+            .map(|_| (C::new(&params), C::default()))
             .unzip();
 
         Automata {
@@ -87,14 +87,11 @@ impl<C: Cell> AutomataTrait for Automata<C> {
 
                 // calculate the next cell
                 let index = self.grid_to_linear(col as usize, row as usize);
-                self.next[index] = Some(self.current[index].next(&self.params, neighbors_iter));
+                self.next[index] = self.current[index].next(&self.params, neighbors_iter);
             }
         }
 
-        let cell_refs = self.current.iter_mut().zip(self.next.iter_mut());
-        for (current_cell, next_cell) in cell_refs {
-            *current_cell = next_cell.take().unwrap();
-        }
+        std::mem::swap(&mut self.current, &mut self.next);
     }
 
     fn render(&self) {
