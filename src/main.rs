@@ -15,6 +15,7 @@ use automata::{Automata, AutomataTrait};
 use cell::life::{Life, LifeParams};
 use cell::cyclic::{Cyclic, CyclicParams};
 use cell::cyclic::palette::*;
+use cell::brain::{Brain, BrainParams};
 use time::GenerationTimer;
 
 static SCREEN_DIMS: LazyLock<(f32, f32)> = LazyLock::new(|| {
@@ -78,7 +79,15 @@ async fn main() {
                     palette,
                 }
             ))
-        }
+        },
+        CellType::Brain(params) => {
+            Box::new(Automata::<Brain>::new(
+                args.cell_size,
+                BrainParams {
+                    alive_ratio: params.percentage as f32 / 100.0,
+                }
+            ))
+        },
     };
 
     let mut timer = GenerationTimer::new(args.gens_per_sec);

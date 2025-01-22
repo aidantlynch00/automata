@@ -1,5 +1,6 @@
 pub mod life;
 pub mod cyclic;
+pub mod brain;
 
 use macroquad::color::Color;
 

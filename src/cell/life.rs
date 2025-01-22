@@ -2,6 +2,7 @@ use macroquad::prelude::*;
 use macroquad::rand::gen_range;
 use crate::cell::Cell;
 
+#[derive(PartialEq, Eq)]
 pub enum Life {
     Dead,
     Alive,
@@ -25,19 +26,16 @@ impl Cell for Life {
 
     fn next<'a>(&'a self, _params: &Self::Params, neighbors: impl IntoIterator<Item = &'a Self>) -> Self
     {
-        let alive_neighbors = neighbors.into_iter()
-            .map(|neighbor| match *neighbor {
-                Life::Dead => 0,
-                Life::Alive => 1,
-            })
-            .sum::<usize>();
+        let count = neighbors.into_iter()
+            .filter(|neighbor| **neighbor == Life::Alive)
+            .count();
 
         match *self {
-            Life::Dead => match alive_neighbors {
+            Life::Dead => match count {
                 3 => Life::Alive,
                 _ => Life::Dead,
             },
-            Life::Alive => match alive_neighbors {
+            Life::Alive => match count {
                 2 | 3 => Life::Alive,
                 _ => Life::Dead,
             },

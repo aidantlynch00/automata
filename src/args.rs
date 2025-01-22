@@ -53,12 +53,13 @@ pub struct WindowArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum CellType {
-    Life(LifeArgs),
+    Life(PercentArg),
     Cyclic(CyclicArgs),
+    Brain(PercentArg),
 }
 
 #[derive(Args, Debug)]
-pub struct LifeArgs {
+pub struct PercentArg {
     #[arg(
         short = 'p',
         long = "percentage",
