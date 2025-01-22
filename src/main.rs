@@ -12,10 +12,7 @@ use miniquad::conf::Platform;
 use clap::Parser;
 use args::*;
 use automata::{Automata, AutomataTrait};
-use cell::life::{Life, LifeParams};
-use cell::cyclic::{Cyclic, CyclicParams};
-use cell::cyclic::palette::*;
-use cell::brain::{Brain, BrainParams};
+use cell::prelude::*;
 use time::GenerationTimer;
 
 static SCREEN_DIMS: LazyLock<(f32, f32)> = LazyLock::new(|| {
@@ -90,6 +87,7 @@ async fn main() {
         },
     };
 
+    // enter main loop
     let mut timer = GenerationTimer::new(args.gens_per_sec);
     loop {
         // handle key presses
