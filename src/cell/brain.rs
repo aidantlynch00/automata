@@ -25,7 +25,7 @@ impl Cell for Brain {
         }
     }
 
-    fn next<'a>(&'a self, params: &Self::Params, neighbors: impl IntoIterator<Item = &'a Self>) -> Self {
+    fn next<'a>(&'a self, _params: &Self::Params, neighbors: impl IntoIterator<Item = &'a Self>) -> Self {
         match *self {
             Brain::Dead => {
                 let count = neighbors.into_iter()
@@ -42,7 +42,7 @@ impl Cell for Brain {
         }
     }
 
-    fn color(&self, params: &Self::Params) -> Color {
+    fn color(&self, _params: &Self::Params) -> Color {
         match *self {
             Brain::Dead => BLACK,
             Brain::Dying => BLUE,
