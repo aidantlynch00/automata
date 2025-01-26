@@ -6,6 +6,7 @@ mod time;
 use std::process::exit;
 use std::sync::LazyLock;
 use std::time::SystemTime;
+use std::str::FromStr;
 use macroquad::prelude::*;
 use macroquad::rand::srand;
 use miniquad::conf::Platform;
@@ -59,7 +60,8 @@ async fn main() {
             Box::new(Automata::<Life>::new(
                 args.cell_size,
                 LifeParams {
-                    alive_ratio: params.percentage as f32 / 100.0,
+                    alive_ratio: params.percent_arg.percentage as f32 / 100.0,
+                    rule: params.rule,
                 }
             ))
         },

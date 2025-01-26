@@ -1,4 +1,6 @@
+use std::str::FromStr;
 use clap::{Args, ValueEnum, Parser, Subcommand};
+use crate::cell::life::LifeRule;
 
 #[derive(Parser, Debug)]
 pub struct AutomataArgs {
@@ -53,7 +55,7 @@ pub struct WindowArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum CellType {
-    Life(PercentArg),
+    Life(LifeArgs),
     Cyclic(CyclicArgs),
     Brain(PercentArg),
 }
@@ -67,6 +69,20 @@ pub struct PercentArg {
         value_parser = clap::value_parser!(u8).range(0..=100),
     )]
     pub percentage: u8,
+}
+
+#[derive(Args, Debug)]
+pub struct LifeArgs {
+    #[arg(
+        short = 'r',
+        long = "rule",
+        default_value = "B3S23",
+        value_parser = parse_rule
+    )]
+    pub rule: LifeRule,
+
+    #[clap(flatten)]
+    pub percent_arg: PercentArg,
 }
 
 #[derive(Args, Debug)]
@@ -92,4 +108,9 @@ pub struct CyclicArgs {
 pub enum Palette {
     Rainbow,
     Grayscale,
+}
+
+fn parse_rule(s: &str) -> Result<LifeRule, String> {
+    LifeRule::from_str(s)
+        .map_err(|rule_err| rule_err.message.to_owned())
 }
