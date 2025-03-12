@@ -13,11 +13,13 @@ use clap::Parser;
 use args::*;
 use automata::{Automata, AutomataParams, AutomataTrait};
 use cell::prelude::*;
-use time::GenerationTimer;
+use time::Ticker;
 
 static SCREEN_DIMS: LazyLock<(f32, f32)> = LazyLock::new(|| {
     (screen_width(), screen_height())
 });
+
+static SAMPLES_PER_SEC: u32 = 10;
 
 fn window_conf() -> Conf {
     Conf {
@@ -96,21 +98,24 @@ async fn main() {
     clear_background(BLACK);
 
     // enter main loop
-    let mut timer = GenerationTimer::new(args.gens_per_sec);
+    let mut sample_timer = Ticker::new(SAMPLES_PER_SEC);
+    let mut render_timer = Ticker::new(args.gens_per_sec);
     loop {
-        // handle key presses
-        if is_key_pressed(KeyCode::Q) {
-            exit(0);
-        }
-        
-        let (_wheel_x, wheel_y) = mouse_wheel();
-        match wheel_y {
-            -1.0 => timer.dec_rate(),
-             1.0 => timer.inc_rate(),
-            _ => {}
+        if sample_timer.tick() {
+            // handle key presses
+            if is_key_down(KeyCode::Q) {
+                exit(0);
+            }
+            
+            let (_wheel_x, wheel_y) = mouse_wheel();
+            match wheel_y {
+                -1.0 => render_timer.dec_rate(),
+                 1.0 => render_timer.inc_rate(),
+                _ => {}
+            }
         }
 
-        if timer.tick() {
+        if render_timer.tick() {
             // calculate next generation of automata
             automata.next();
 

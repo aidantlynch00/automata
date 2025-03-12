@@ -1,16 +1,16 @@
 use std::time::{Duration, SystemTime};
 
-pub struct GenerationTimer {
-    gens_per_sec: u32,
+pub struct Ticker {
+    ticks_per_secs: u32,
     target: Duration,
     last_tick: SystemTime,
 }
 
-impl GenerationTimer {
-    pub fn new(gens_per_sec: u32) -> GenerationTimer {
-        GenerationTimer {
-            gens_per_sec,
-            target: Duration::from_secs(1) / gens_per_sec,
+impl Ticker {
+    pub fn new(ticks_per_sec: u32) -> Ticker {
+        Ticker {
+            ticks_per_secs: ticks_per_sec,
+            target: Duration::from_secs(1) / ticks_per_sec,
             last_tick: SystemTime::UNIX_EPOCH,
         }
     }
@@ -29,14 +29,14 @@ impl GenerationTimer {
     }
 
     pub fn inc_rate(&mut self) {
-        self.gens_per_sec += 1;
-        self.target = Duration::from_secs(1) / self.gens_per_sec;
+        self.ticks_per_secs += 1;
+        self.target = Duration::from_secs(1) / self.ticks_per_secs;
     }
 
     pub fn dec_rate(&mut self) {
-        if self.gens_per_sec > 1 {
-            self.gens_per_sec -= 1;
-            self.target = Duration::from_secs(1) / self.gens_per_sec;
+        if self.ticks_per_secs > 1 {
+            self.ticks_per_secs -= 1;
+            self.target = Duration::from_secs(1) / self.ticks_per_secs;
         }
     }
 }
