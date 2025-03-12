@@ -20,7 +20,6 @@ static SCREEN_DIMS: LazyLock<(f32, f32)> = LazyLock::new(|| {
     (screen_width(), screen_height())
 });
 
-
 fn window_conf() -> Conf {
     Conf {
         window_title: "Automata".to_string(),
@@ -89,6 +88,8 @@ async fn main() {
         },
     };
 
+    clear_background(BLACK);
+
     // enter main loop
     let mut timer = GenerationTimer::new(args.gens_per_sec);
     loop {
@@ -104,16 +105,13 @@ async fn main() {
             _ => {}
         }
 
-        clear_background(BLACK);
-
-        // render automata on screen
-        automata.render();
-
-        if timer.generate() {
+        if timer.tick() {
             // calculate next generation of automata
             automata.next();
-        }
 
-        next_frame().await;
+            // render automata on screen
+            automata.render();
+            next_frame().await;
+        }
     }
 }

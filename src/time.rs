@@ -1,24 +1,26 @@
-use macroquad::time::get_frame_time;
+use std::time::{Duration, SystemTime};
 
 pub struct GenerationTimer {
-    gens_per_sec: f32,
-    target: f32,
-    sum: f32,
+    gens_per_sec: u32,
+    target: Duration,
+    last_tick: SystemTime,
 }
 
 impl GenerationTimer {
-    pub fn new(gens_per_sec: f32) -> GenerationTimer {
+    pub fn new(gens_per_sec: u32) -> GenerationTimer {
         GenerationTimer {
             gens_per_sec,
-            target: 1.0 / gens_per_sec,
-            sum: 0.0,
+            target: Duration::from_secs(1) / gens_per_sec,
+            last_tick: SystemTime::UNIX_EPOCH,
         }
     }
 
-    pub fn generate(&mut self) -> bool {
-        self.sum += get_frame_time();
-        if self.sum >= self.target {
-            self.sum -= self.target;
+    pub fn tick(&mut self) -> bool {
+        let now = SystemTime::now();
+        let time_since_tick = now.duration_since(self.last_tick).unwrap();
+
+        if time_since_tick > self.target {
+            self.last_tick = now;
             true
         }
         else {
@@ -27,16 +29,14 @@ impl GenerationTimer {
     }
 
     pub fn inc_rate(&mut self) {
-        self.gens_per_sec += 1.0;
-        self.target = 1.0 / self.gens_per_sec;
+        self.gens_per_sec += 1;
+        self.target = Duration::from_secs(1) / self.gens_per_sec;
     }
 
     pub fn dec_rate(&mut self) {
-        self.gens_per_sec -= 1.0;
-        if self.gens_per_sec < 1.0 {
-            self.gens_per_sec = 1.0;
+        if self.gens_per_sec > 1 {
+            self.gens_per_sec -= 1;
+            self.target = Duration::from_secs(1) / self.gens_per_sec;
         }
-
-        self.target = 1.0 / self.gens_per_sec;
     }
 }

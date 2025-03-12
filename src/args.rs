@@ -17,9 +17,9 @@ pub struct AutomataArgs {
     #[arg(
         short = 'g',
         long = "gens-per-sec",
-        default_value_t = 10.0,
+        default_value_t = 10,
     )]
-    pub gens_per_sec: f32,
+    pub gens_per_sec: u32,
 
     #[command(subcommand)]
     pub cell: CellType,
