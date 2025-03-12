@@ -6,9 +6,6 @@ use macroquad::prelude::*;
 use crate::SCREEN_DIMS;
 use crate::cell::Cell;
 
-static NUM_THREADS: usize = 8;
-static NUM_CHUNKS: usize = 32;
-
 pub trait AutomataTrait {
     fn next(&mut self);
     fn render(&self);
@@ -29,13 +26,19 @@ where C: Cell + 'static + Send + Sync,
     pub result_send: Sender<(usize, C)>,
 }
 
+pub struct AutomataParams {
+    pub cell_size: f32,
+    pub threads: usize,
+    pub chunks: usize,
+}
+
 pub struct Automata<C>
 where C: Cell + 'static + Send + Sync,
       C::Params: 'static + Send + Sync
 {
     cell_size: f32,
     grid_size: GridSize,
-    params: Arc<C::Params>,
+    cell_params: Arc<C::Params>,
     current: Arc<Box<[C]>>,
     next: Box<[C]>,
     chunks: Box<[Range<usize>]>,
@@ -47,7 +50,9 @@ impl<C> Automata<C>
 where C: Cell + 'static + Send + Sync,
       C::Params: 'static + Send + Sync
 {
-    pub fn new(cell_size: f32, params: C::Params) -> Automata<C> {
+    pub fn new(params: AutomataParams, cell_params: C::Params) -> Automata<C> {
+        let AutomataParams { cell_size, threads, chunks } = params;
+
         // determine the grid size based on screen and cell size
         let (sw, sh) = *SCREEN_DIMS;
         let cols = (sw / cell_size) as usize;
@@ -55,26 +60,26 @@ where C: Cell + 'static + Send + Sync,
 
         let total = cols * rows;
         let (current, next): (Vec<C>, Vec<C>) = (0..total)
-            .map(|_| (C::new(&params), C::default()))
+            .map(|_| (C::new(&cell_params), C::default()))
             .unzip();
 
-        let chunk_size = total / NUM_CHUNKS;
-        let mut chunks: Vec<Range<usize>> = (0..NUM_CHUNKS - 1)
+        let chunk_size = total / chunks;
+        let mut chunks_vec: Vec<Range<usize>> = (0..chunks - 1)
             .map(|n| {
                 let start = chunk_size * n;
                 start..(start + chunk_size)
             })
             .collect();
-        chunks.push((chunk_size * (NUM_CHUNKS - 1))..total);
+        chunks_vec.push((chunk_size * (chunks - 1))..total);
 
         let grid_size = GridSize { cols, rows };
-        let params = Arc::new(params);
-        let (workers, senders): (Vec<thread::JoinHandle<()>>, Vec<Sender<WorkerItem<C>>>) = (0..NUM_THREADS)
+        let cell_params = Arc::new(cell_params);
+        let (workers, senders): (Vec<thread::JoinHandle<()>>, Vec<Sender<WorkerItem<C>>>) = (0..threads)
             .map(|_| {
-                let params_clone = Arc::clone(&params);
+                let cell_params_clone = Arc::clone(&cell_params);
                 let (item_send, item_recv) = channel();
                 let handle = thread::spawn(move || {
-                    Automata::calculate_chunk(grid_size, params_clone, item_recv);
+                    Automata::calculate_chunk(grid_size, cell_params_clone, item_recv);
                 });
 
                 (handle, item_send)
@@ -84,10 +89,10 @@ where C: Cell + 'static + Send + Sync,
         Automata {
             cell_size,
             grid_size,
-            params,
+            cell_params,
             current: Arc::new(current.into_boxed_slice()),
             next: next.into_boxed_slice(),
-            chunks: chunks.into_boxed_slice(),
+            chunks: chunks_vec.into_boxed_slice(),
             workers: workers.into_boxed_slice(),
             item_senders: senders.into_boxed_slice(),
         }
@@ -95,7 +100,7 @@ where C: Cell + 'static + Send + Sync,
 
     fn calculate_chunk(
         grid_size: GridSize,
-        params: Arc<C::Params>,
+        cell_params: Arc<C::Params>,
         item_recv: Receiver<WorkerItem<C>>
     ) {
         static DIFFS: [(isize, isize); 8] = [
@@ -128,7 +133,7 @@ where C: Cell + 'static + Send + Sync,
                 // calculate next cell
                 let neighbors_iter = neighbors.iter_mut()
                     .flat_map(|nopt| nopt.take());
-                let next = current[index].next(&params, neighbors_iter);
+                let next = current[index].next(&cell_params, neighbors_iter);
 
                 // SAFETY: receiver is only dropped when all senders are dropped
                 result_send.send((index, next)).unwrap();
@@ -178,7 +183,7 @@ where C: Cell + 'static + Send + Sync,
     fn render(&self) {
         for (index, cell) in self.current.iter().enumerate() {
             let (x, y) = linear_to_grid(self.grid_size.rows, index);
-            let color = cell.color(&self.params);
+            let color = cell.color(&self.cell_params);
 
             draw_rectangle(
                 x as f32 * self.cell_size,

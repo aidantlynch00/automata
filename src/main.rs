@@ -6,13 +6,12 @@ mod time;
 use std::process::exit;
 use std::sync::LazyLock;
 use std::time::SystemTime;
-use std::str::FromStr;
 use macroquad::prelude::*;
 use macroquad::rand::srand;
 use miniquad::conf::Platform;
 use clap::Parser;
 use args::*;
-use automata::{Automata, AutomataTrait};
+use automata::{Automata, AutomataParams, AutomataTrait};
 use cell::prelude::*;
 use time::GenerationTimer;
 
@@ -54,35 +53,41 @@ async fn main() {
     srand(SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs());
 
     // set up automata
+    let params = AutomataParams {
+        cell_size: args.cell_size,
+        threads: args.threads,
+        chunks: args.chunks,
+    };
+
     let mut automata: Box<dyn AutomataTrait> = match args.cell {
-        CellType::Life(params) => {
+        CellType::Life(life_params) => {
             Box::new(Automata::<Life>::new(
-                args.cell_size,
+                params,
                 LifeParams {
-                    alive_ratio: params.percent_arg.percentage as f32 / 100.0,
-                    rule: params.rule,
+                    alive_ratio: life_params.percent_arg.percentage as f32 / 100.0,
+                    rule: life_params.rule,
                 }
             ))
         },
-        CellType::Cyclic(params) => {
-            let palette = match params.palette {
+        CellType::Cyclic(cyclic_params) => {
+            let palette = match cyclic_params.palette {
                 Palette::Rainbow => &*COLORS,
                 Palette::Grayscale => &*GRAYSCALE,
             };
 
             Box::new(Automata::<Cyclic>::new(
-                args.cell_size,
+                params,
                 CyclicParams {
-                    threshold: params.threshold,
+                    threshold: cyclic_params.threshold,
                     palette,
                 }
             ))
         },
-        CellType::Brain(params) => {
+        CellType::Brain(brain_params) => {
             Box::new(Automata::<Brain>::new(
-                args.cell_size,
+                params,
                 BrainParams {
-                    alive_ratio: params.percentage as f32 / 100.0,
+                    alive_ratio: brain_params.percentage as f32 / 100.0,
                 }
             ))
         },

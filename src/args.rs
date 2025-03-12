@@ -15,6 +15,20 @@ pub struct AutomataArgs {
     pub cell_size: f32,
 
     #[arg(
+        short = 't',
+        long = "threads",
+        default_value_t = 4,
+    )]
+    pub threads: usize,
+
+    #[arg(
+        short = 'c',
+        long = "chunks",
+        default_value_t = 32,
+    )]
+    pub chunks: usize,
+
+    #[arg(
         short = 'g',
         long = "gens-per-sec",
         default_value_t = 10,
@@ -88,7 +102,7 @@ pub struct LifeArgs {
 #[derive(Args, Debug)]
 pub struct CyclicArgs {
     #[arg(
-        short = 't',
+        short = 'n',
         long = "threshold",
         default_value_t = 1,
         value_parser = clap::value_parser!(u8).range(1..=8),
