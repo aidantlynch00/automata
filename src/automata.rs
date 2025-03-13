@@ -129,24 +129,27 @@ where C: 'static + Cell + Send + Sync + Default + PartialEq + Eq,
         ];
 
         let GridSize { cols, rows } = grid_size;
+        let total = cols * rows;
+
+        let mut neighbors: [Option<&C>; 8];
         while let Ok(WorkerItem { current, range, result_send }) = item_recv.recv() {
             for index in range.into_iter() {
-                let mut neighbors = [None; 8];
-                let neighbor_diff_iter = DIFFS.iter()
-                    .zip(neighbors.iter_mut());
+                neighbors = [None; 8];
+                let neighbor_diff_iter = DIFFS.iter().zip(neighbors.iter_mut());
 
-                let (col, row) = linear_to_grid(rows, index);
-                for ((dcol, drow), nopt) in neighbor_diff_iter {
-                    let ncol = col as isize + dcol;
-                    let nrow = row as isize + drow;
-
-                    *nopt = if ncol < 0 || ncol >= cols as isize || nrow < 0 || nrow >= rows as isize {
-                        None
-                    }
-                    else {
-                        let nindex = grid_to_linear(rows, ncol as usize, nrow as usize);
-                        Some(&current[nindex])
+                for (diff, nopt) in neighbor_diff_iter {
+                    let nindex = match diff {
+                        (-1,  _) if index < rows => continue,
+                        ( 1,  _) if total - index <= rows => continue,
+                        ( _, -1) if (index % rows) == 0 => continue,
+                        ( _,  1) if ((index + 1) % rows) == 0 => continue,
+                        (-1, drow) => ((index - rows) as isize + drow) as usize,
+                        ( 0, drow) => (index as isize + drow) as usize,
+                        ( 1, drow) => ((index + rows) as isize + drow) as usize,
+                        _ => continue
                     };
+
+                    *nopt = Some(&current[nindex]);
                 }
 
                 // calculate next cell
