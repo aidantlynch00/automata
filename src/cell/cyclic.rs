@@ -18,6 +18,7 @@ pub mod palette {
     });
 }
 
+#[derive(PartialEq, Eq)]
 pub struct Cyclic {
     value: usize,
 }

@@ -18,12 +18,19 @@ struct GridSize {
 }
 
 struct WorkerItem<C>
-where C: Cell + 'static + Send + Sync,
+where C: 'static + Cell + Send + Sync + Default + PartialEq + Eq,
       C::Params: 'static + Send + Sync
 {
     pub current: Arc<Box<[C]>>,
     pub range: Range<usize>,
     pub result_send: Sender<(usize, C)>,
+}
+
+struct AutomataTexture {
+    image: Image,
+    texture: Texture2D,
+    params: DrawTextureParams,
+    pub first_update: bool,
 }
 
 pub struct AutomataParams {
@@ -33,10 +40,9 @@ pub struct AutomataParams {
 }
 
 pub struct Automata<C>
-where C: Cell + 'static + Send + Sync,
+where C: 'static + Cell + Send + Sync + Default + PartialEq + Eq,
       C::Params: 'static + Send + Sync
 {
-    cell_size: f32,
     grid_size: GridSize,
     cell_params: Arc<C::Params>,
     current: Arc<Box<[C]>>,
@@ -44,10 +50,11 @@ where C: Cell + 'static + Send + Sync,
     chunks: Box<[Range<usize>]>,
     workers: Box<[thread::JoinHandle<()>]>,
     item_senders: Box<[Sender<WorkerItem<C>>]>,
+    texture: AutomataTexture,
 }
 
 impl<C> Automata<C>
-where C: Cell + 'static + Send + Sync,
+where C: 'static + Cell + Send + Sync + Default + PartialEq + Eq,
       C::Params: 'static + Send + Sync
 {
     pub fn new(params: AutomataParams, cell_params: C::Params) -> Automata<C> {
@@ -86,8 +93,11 @@ where C: Cell + 'static + Send + Sync,
             })
             .unzip();
 
+        let image = Image::gen_image_color(cols as u16, rows as u16, BLACK);
+        let texture = Texture2D::from_image(&image);
+        texture.set_filter(FilterMode::Nearest);
+
         Automata {
-            cell_size,
             grid_size,
             cell_params,
             current: Arc::new(current.into_boxed_slice()),
@@ -95,6 +105,15 @@ where C: Cell + 'static + Send + Sync,
             chunks: chunks_vec.into_boxed_slice(),
             workers: workers.into_boxed_slice(),
             item_senders: senders.into_boxed_slice(),
+            texture: AutomataTexture {
+                image,
+                texture,
+                params: DrawTextureParams {
+                    dest_size: Some((*SCREEN_DIMS).into()),
+                    ..DrawTextureParams::default()
+                },
+                first_update: true,
+            },
         }
     }
 
@@ -148,7 +167,7 @@ where C: Cell + 'static + Send + Sync,
 }
 
 impl<C> AutomataTrait for Automata<C>
-where C: Cell + 'static + Send + Sync,
+where C: 'static + Cell + Send + Sync + Default + PartialEq + Eq,
       C::Params: 'static + Send + Sync
 {
     fn next(&mut self) {
@@ -171,28 +190,50 @@ where C: Cell + 'static + Send + Sync,
 
         // receive results from worker threads
         while let Ok((index, cell)) = result_recv.recv() {
-            self.next[index] = cell;
+            let next_cell = &mut self.next[index];
+            *next_cell = cell;
+
+            // if the cell is different from last generation, update the texture
+            let curr_cell = &self.current[index];
+            if self.texture.first_update || *next_cell != *curr_cell {
+                let (x, y) = linear_to_grid(self.grid_size.rows, index);
+                let color = next_cell.color(&self.cell_params);
+                self.texture.set_pixel(x, y, color);
+            }
         }
 
         // SAFETY: results are back from worker threads and additional
         // references were dropped
         let current = Arc::get_mut(&mut self.current).unwrap();
         std::mem::swap(current, &mut self.next);
+
+        // update complete
+        self.texture.first_update = false;
     }
 
     fn render(&self) {
-        for (index, cell) in self.current.iter().enumerate() {
-            let (x, y) = linear_to_grid(self.grid_size.rows, index);
-            let color = cell.color(&self.cell_params);
+        self.texture.update();
+        self.texture.fill_screen();
+    }
+}
 
-            draw_rectangle(
-                x as f32 * self.cell_size,
-                y as f32 * self.cell_size,
-                self.cell_size,
-                self.cell_size,
-                color
-            );
-        }
+impl AutomataTexture {
+    fn update(&self) {
+        self.texture.update(&self.image);
+    }
+
+    fn set_pixel(&mut self, x: usize, y: usize, color: Color) {
+        self.image.set_pixel(x as u32, y as u32, color);
+    }
+
+    fn fill_screen(&self) {
+        draw_texture_ex(
+            &self.texture,
+            0.0,
+            0.0,
+            WHITE,
+            self.params.clone()
+        );
     }
 }
 
