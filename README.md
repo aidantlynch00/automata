@@ -1,6 +1,7 @@
 # Automata
 A generic engine for running 2D cellular automata where the next generation of cells depends on the state of its neighbors.
-<!--TODO: Add a GIF of Brian's Brain!-->
+
+![Brian's Brain demo](assets/brain.gif)
 
 ## Supported Automata
 - [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life)
