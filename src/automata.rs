@@ -39,6 +39,7 @@ pub struct AutomataParams {
     pub chunks: usize,
 }
 
+#[allow(dead_code)] // ignore warning for 'workers' never read
 pub struct Automata<C>
 where C: 'static + Cell + Send + Sync + Default + PartialEq + Eq,
       C::Params: 'static + Send + Sync
@@ -244,8 +245,4 @@ fn linear_to_grid(rows: usize, index: usize) -> (usize, usize) {
     let col = index / rows;
     let row = index % rows;
     (col, row)
-}
-
-fn grid_to_linear(rows: usize, col: usize, row: usize) -> usize {
-    col * rows + row
 }

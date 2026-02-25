@@ -15,6 +15,7 @@ pub struct LifeRule {
     survive: u16,
 }
 
+#[allow(dead_code)] // ignore warning for 'reason' never read
 #[derive(Debug)]
 pub struct RuleParseError {
     pub message: &'static str,
