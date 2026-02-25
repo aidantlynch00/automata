@@ -52,7 +52,12 @@ async fn main() {
     for _ in 0..3 { next_frame().await }
 
     // set a random seed so that each run is different
-    srand(SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs());
+    let time_since_epoch = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    srand(time_since_epoch);
 
     // set up automata
     let params = AutomataParams {
