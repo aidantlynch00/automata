@@ -18,7 +18,12 @@ impl Cell for Brain {
 
     fn new(params: &Self::Params) -> Self {
         if gen_range(0.0, 1.0) < params.alive_ratio {
-            Brain::Alive
+            if gen_range(0.0, 1.0) > 0.5 {
+                Brain::Alive
+            }
+            else {
+                Brain::Dying
+            }
         }
         else {
             Brain::Dead
