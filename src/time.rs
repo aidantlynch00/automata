@@ -1,9 +1,9 @@
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant};
 
 pub struct Ticker {
     ticks_per_secs: u32,
     target: Duration,
-    last_tick: SystemTime,
+    last_tick: Instant,
 }
 
 impl Ticker {
@@ -11,13 +11,13 @@ impl Ticker {
         Ticker {
             ticks_per_secs: ticks_per_sec,
             target: Duration::from_secs(1) / ticks_per_sec,
-            last_tick: SystemTime::UNIX_EPOCH,
+            last_tick: Instant::now(),
         }
     }
 
     pub fn tick(&mut self) -> bool {
-        let now = SystemTime::now();
-        let time_since_tick = now.duration_since(self.last_tick).unwrap();
+        let now = Instant::now();
+        let time_since_tick = now.duration_since(self.last_tick);
 
         if time_since_tick > self.target {
             self.last_tick = now;
